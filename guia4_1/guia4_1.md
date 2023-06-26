@@ -1,6 +1,6 @@
 # guia4_1
 
-![Untitled](guia4_1%201e719257ffdf40c9bec2d319a60e3b05/Untitled.png)
+![guia4_1](guia4_1.png)
 
 ## Ejercicios
 
