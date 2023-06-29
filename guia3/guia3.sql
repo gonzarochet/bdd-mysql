@@ -105,6 +105,9 @@ values (1,223,6345890),(2,221,5039034),(3,2281,5455642);
 insert into reserva(escuelaid,fecha)
 values (1,'2018-01-01'),(1,'2018-02-01'),(1,'2018-09-01'),(1,'2018-10-01'),(2,'2018-10-01'),(1,'2018-01-02'),(2,'2018-03-02'),(2,'2018-10-02');
 
+insert into reserva(escuelaid,fecha)
+values(2,'2023-01-07');
+
 insert into tipoVisita(nombre,arancel)
 values ('Común', 100.5),('Extendida', 150.7),('Completa', 210.8);
 
@@ -139,9 +142,34 @@ select e.nombre, concat(t.codigoArea, t.nroTelefono) from escuela e
 join telEscuela t on e.escuelaid = t.escuelaid;
 
 /* 2. Listar Nombre y cantidad de Reservas realizadas para cada Escuela durante el presente año.*/ 
-select e.nombre, count(*) from escuela e
+select e.nombre, count(r.reservaid) from escuela e
 join reserva r on e.escuelaid = r.escuelaid
-where fecha = 
+where year(fecha) = year(current_date())
+group by e.escuelaid;
 
+/* 3. Listar Nombre y cantidad de Reservas realizadas para cada Escuela durante el presente año, en caso
+de no haber realizado Reservas, mostrar el número cero. */
 
+select e.nombre, coalesce(count(r.reservaid),0) as 'cantidad reservas' from escuela e
+join reserva r on e.escuelaid = r.escuelaid
+where year(fecha) = year(current_date())
+group by e.escuelaid;
+
+/* 4. Listar el nombre de los Guías que participaron en las Visitas, pero no como Responsable. */ 
+select g.nombre from guia g
+join visitasguias vg on g.guiaid = vg.guiaid
+join visita v on v.tipoVisitaid= vg.visitasGuiasid
+group by g.guiaid;
+
+/* 5. Listar el nombre de los Guías que no participaron de ninguna Visita.*/
+select g.nombre from guia g
+left join visitasguias vg on vg.guiaid = g.guiaid
+left join visita v on v.tipoVisitaid = vg.visitasGuiasid
+where v.visitaid is null
+group by g.guiaid;
+
+select * from guia g
+left join visitasguias vg on vg.guiaid = g.guiaid
+left join visita v on v.tipoVisitaid = vg.visitasGuiasid
+where v.visitaid is null
 
