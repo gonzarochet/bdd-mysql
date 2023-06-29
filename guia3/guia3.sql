@@ -75,41 +75,50 @@ select * from escuela;
 
 /* 3.Agregar una restricción a la tabla Localidades para que el IdLocalidad no sea menor
 que 1000 ni superior a 9999. */
-
+alter table localidad
+add check (codigo >999 and codigo<10000);
 
 /* 4. Agregar a la tabla Visitas una restricción para que la cantidad de AlumnosReales sea
 igual o menor que la cantidad de Alumnos */
 
+alter table visita
+add check(cantAlumnosReales<= cantAlumnos);
+
 /* 5. Agregar a la tabla Visitas una restricción para que la cantidad de AlumnosReales sea
 igual a la cantidad de Alumnos, si no se ingresa un valor específico para la columna. */ 
+/* alter table visita
+alter column cantAlumnosReales set default cantAlumnos;
 
+update visita
+set cantAlumnosReales = cantAlumnos
+where cantAlumnosReales is null ;*/
 
 
 /* aGREGAR DATOS */
 
-insert into Escuelas (escuela)
+insert into escuela (nombre)
 values ('escuela1'),('escuela2'),('escuela3'),('escuela4');
 
-insert into telefonos (idTelefono,idEscuela)
-values (111,1),(222,1),(333,2);
+insert into telEscuela (escuelaid,codigoArea,nroTelefono)
+values (1,223,6345890),(2,221,5039034),(3,2281,5455642);
 
-insert into Reservas(idEscuela,fecha)
+insert into reserva(escuelaid,fecha)
 values (1,'2018-01-01'),(1,'2018-02-01'),(1,'2018-09-01'),(1,'2018-10-01'),(2,'2018-10-01'),(1,'2018-01-02'),(2,'2018-03-02'),(2,'2018-10-02');
 
-insert into TipoVisitas(tipoVisita,arancel)
+insert into tipoVisita(nombre,arancel)
 values ('Común', 100.5),('Extendida', 150.7),('Completa', 210.8);
 
-insert into Visitas(idReserva,idTipoVisita,grado,alumnos,alumnosReales)
+insert into visita(reservaid,tipoVisitaid,grado,cantAlumnos,cantAlumnosReales)
 values (1,1,'1a',200,150),(2,1,'1b',200,160),(3,2,'1c',200,120),(4,3,'2a',100,80),(5,1,'1a',80,50),(6,1,'1a',232,123),(7,1,'1a',210,130),(8,1,'1a',213,50);
 
-insert into Guias(guia)
+insert into guia(nombre)
 values ('Juan'),('John'),('Marcelo'),('Nadia');
 
-insert into VisitasGuias(idReserva,idTipoVisita,idGuia,responsable)
-values (1,1,1,1),(1,1,2,0),(2,1,1,0),(2,1,2,1),(3,2,3,1),(4,3,1,1),(5,1,1,1);
+insert into visitasGuias(visitaid,guiaid)
+values (1,1),(1,1),(2,1),(2,1),(3,2),(4,3),(5,1);
 
-insert into localidades(localidad)
-values ('Buenos Aires'),('Gran Buenos Aires');
+insert into localidad(nombre, codigo)
+values ('Buenos Aires',1425),('Mar del Plata',7600);
 
 update escuelas
 set idLocalidad = 1
@@ -120,11 +129,19 @@ where idEscuela = 2;
 
 
 
-
 /* <<<<<<<<<<<<<<<<<<<<<<<-----GUIA 4 - CONSULTAS---->>>>>>>>>>>>>>>>>>>>>>>>>>*/
 
 /* 1.  Listar nombre y teléfonos de cada escuela.*/ 
 
+select * from telEscuela;
+
+select e.nombre, concat(t.codigoArea, t.nroTelefono) from escuela e
+join telEscuela t on e.escuelaid = t.escuelaid;
+
+/* 2. Listar Nombre y cantidad de Reservas realizadas para cada Escuela durante el presente año.*/ 
+select e.nombre, count(*) from escuela e
+join reserva r on e.escuelaid = r.escuelaid
+where fecha = 
 
 
 
