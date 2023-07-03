@@ -123,12 +123,12 @@ values (1,1),(1,1),(2,1),(2,1),(3,2),(4,3),(5,1);
 insert into localidad(nombre, codigo)
 values ('Buenos Aires',1425),('Mar del Plata',7600);
 
-update escuelas
-set idLocalidad = 1
-where idEscuela = 1;
-update escuelas
-set idLocalidad = 1
-where idEscuela = 2;
+update escuela
+set localidadid = 1
+where escuelaid = 1;
+update escuela
+set localidadid = 1
+where escuelaid = 2;
 
 
 
@@ -155,6 +155,12 @@ join reserva r on e.escuelaid = r.escuelaid
 where year(fecha) = year(current_date())
 group by e.escuelaid;
 
+select e.nombre, coalesce(count(r.reservaid),0) as 'Cantidad reservas' from escuela e
+left join reserva r on e.escuelaid = r.escuelaid
+where r.fecha > ('2022-01-01' + interval -1 year)  and r.fecha < ('2022-01-01')
+group by e.escuelaid;
+
+
 /* 4. Listar el nombre de los Guías que participaron en las Visitas, pero no como Responsable. */ 
 select g.nombre from guia g
 join visitasguias vg on g.guiaid = vg.guiaid
@@ -171,5 +177,47 @@ group by g.guiaid;
 select * from guia g
 left join visitasguias vg on vg.guiaid = g.guiaid
 left join visita v on v.tipoVisitaid = vg.visitasGuiasid
-where v.visitaid is null
+where v.visitaid is null;
+
+/* 6. Listar para cada Visita, el nombre de Escuela, el nombre del Guía responsable, la cantidad de
+alumnos que concurrieron y la fecha en que se llevó a cabo. */ 
+select v.visitaid, e.nombre as 'Nombre escuela', g.nombre as 'Nombre guia', r.fecha as 'fecha' , v.cantAlumnosReales as 'cant alumnos' from escuela e
+join reserva r on e.escuelaid = r.escuelaid
+join visita v on r.reservaid = v.reservaid
+join visitasguias vg on v.visitaid = vg.visitaid
+join guia g on vg.guiaid = g.guiaid
+group by v.visitaid, e.nombre,g.nombre,r.fecha, v.cantAlumnosReales;
+
+/* 7. Listar el nombre de cada Escuela y su localidad. También deben aparecer las Localidades que no
+tienen Escuelas, indicando ‘Sin Escuelas’. Algunas Escuelas no tienen cargada la Localidad, debe
+indicar ‘Sin Localidad’. */
+
+select e.nombre as 'Nombre escuela' , ifnull(l.nombre,'Sin Localidad') as 'Localidad' from  escuela e
+left join localidad l on e.localidadid = l.localidadid
+union
+select ifnull(e.nombre,'Sin escuela')as 'Nombre escuela', l.nombre as 'Localidad' from localidad l
+left join escuela e on l.localidadid  = e.localidadid;
+
+select e.nombre, l.nombre from escuela e
+join localidad l on l.localidadid = e.localidadid;
+
+select * from escuela;
+select * from localidad;
+
+/* 8. Listar el nombre de los Directores y el de los Guías, juntos, ordenados alfabéticamente. */ 
+
+/* 10. Listar para las Escuelas que tienen Reservas, el nombre y la Localidad, teniendo en cuenta que
+algunas Escuelas no tienen Localidad. */ 
+
+insert into reserva(escuelaid,fecha)
+values(3,'2023-02-07');
+
+select e.nombre, ifnull(l.nombre, 'Sin localidad') as 'localidad' from escuela e
+left join localidad l on e.localidadid = l.localidadid
+join reserva r on e.escuelaid = r.escuelaid
+group by e.nombre;
+
+select * from escuela e
+join reserva r on e.escuelaid = r.escuelaid;
+
 
