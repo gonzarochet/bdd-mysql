@@ -91,6 +91,9 @@ values(6,1,21,5,3,35.5,4);
 insert into jugadores_x_equipo_x_partido (jugadorid,partidoid,puntos,rebotes,asist,min,faltas)
 values(7,6,14,5,3,35.5,4);
 
+insert into jugadores_x_equipo_x_partido (jugadorid,partidoid,puntos,rebotes,asist,min,faltas)
+values(4,1,12,5,3,35.5,4);
+
 select * from jugadores_x_equipo_x_partido;
 
 select j.nombre, jep.puntos from jugadores_x_equipo_x_partido as jep
@@ -148,7 +151,7 @@ join jugadores_x_equipo_x_partido jep on j.jugadorid = jep.jugadorid
 group by j.nombre, j.apellido;
 
 /* 8. Elaborar un ranking con los jugadores que más puntos hicieron en el torneo */ 
-select j.nombre, j.apellido, sum(jep.puntos) as 'Cant Puntos' from jugadores j
+select j.jugadorid, j.equipoid,j.nombre, j.apellido, sum(jep.puntos) as 'Cant Puntos' from jugadores j
 join jugadores_x_equipo_x_partido jep on j.jugadorid = jep.jugadorid
 group by(j.nombre)
 order by sum(jep.puntos) desc;
@@ -232,56 +235,56 @@ SELECT j.jugadorid,
 			(SELECT avg(jep.puntos)*1 + avg(jep.rebotes)* 0.5 + avg(jep.asist) * 0.5 + (AVG(jep.faltas) * -1)
 			FROM jugadores j join jugadores_x_equipo_x_partido jep on j.jugadorid = jep.jugadorid
 			GROUP BY j.jugadorid
-			ORDER BY (avg(jep.puntos)*1 + avg(jep.rebotes)* 0.5 + avg(jep.asist) * 0.5 + (AVG(jep.faltas) * -1))asc limit 1)) then 'alto'
+			ORDER BY (avg(jep.puntos)*1 + avg(jep.rebotes)* 0.5 + avg(jep.asist) * 0.5 + (AVG(jep.faltas) * -1))asc limit 1)) then 'bajo'
 		WHEN (avg(jep.puntos)*1 + avg(jep.rebotes)* 0.5 + avg(jep.asist) * 0.5 + (AVG(jep.faltas) * -1) ) = 
                 (SELECT avg(jep.puntos)*1 + avg(jep.rebotes)* 0.5 + avg(jep.asist) * 0.5 + (AVG(jep.faltas) * -1)
 				from jugadores j join jugadores_x_equipo_x_partido jep on j.jugadorid = jep.jugadorid
                 group by j.jugadorid
-                order by (avg(jep.puntos)*1 + avg(jep.rebotes)* 0.5 + avg(jep.asist) * 0.5 + (AVG(jep.faltas) * -1) )desc limit 1) then 'bajo' 
+                order by (avg(jep.puntos)*1 + avg(jep.rebotes)* 0.5 + avg(jep.asist) * 0.5 + (AVG(jep.faltas) * -1) )desc limit 1) then 'alto' 
 end as grupo
 FROM jugadores j
 JOIN jugadores_x_equipo_x_partido jep 
 	on j.jugadorid = jep.jugadorid
-GROUP BY j.jugadorid;
+GROUP BY j.jugadorid
+ORDER BY coeficiente DESC;
 
 
-SELECT
-    j.jugadorid,
-    j.nombre,
-    AVG(jep.puntos)*1 + AVG(jep.rebotes)*0.5 + AVG(jep.asist)*0.5 + AVG(jep.faltas)*-1 AS coeficiente,
-    CASE
-        WHEN AVG(jep.puntos)*1 + AVG(jep.rebotes)*0.5 + AVG(jep.asist)*0.5 + AVG(jep.faltas)*-1 >= (
-            SELECT
-                AVG(jep.puntos)*1 + AVG(jep.rebotes)*0.5 + AVG(jep.asist)*0.5 + AVG(jep.faltas)*-1
-            FROM
-                jugadores_x_equipo_x_partido jep
-            GROUP BY
-                jep.jugadorid
-            ORDER BY
-                AVG(jep.puntos)*1 + AVG(jep.rebotes)*0.5 + AVG(jep.asist)*0.5 + AVG(jep.faltas)*-1 DESC
-            LIMIT 1
-        ) THEN 'Mejores 5'
-        WHEN AVG(jep.puntos)*1 + AVG(jep.rebotes)*0.5 + AVG(jep.asist)*0.5 + AVG(jep.faltas)*-1 <= (
-            SELECT
-                AVG(jep.puntos)*1 + AVG(jep.rebotes)*0.5 + AVG(jep.asist)*0.5 + AVG(jep.faltas)*-1
-            FROM
-                jugadores_x_equipo_x_partido jep
-            GROUP BY
-                jep.jugadorid
-            ORDER BY
-                AVG(jep.puntos)*1 + AVG(jep.rebotes)*0.5 + AVG(jep.asist)*0.5 + AVG(jep.faltas)*-1 ASC
-            LIMIT 1
-        ) THEN 'Peores 5'
-    END AS grupo
-FROM
-    jugadores j
-INNER JOIN
-    jugadores_x_equipo_x_partido jep ON j.jugadorid = jep.jugadorid
-GROUP BY
-    j.jugadorid, j.nombre
-ORDER BY
-    coeficiente DESC;
+/*. Generar una consulta que nos devuelva el resultado de un partido. */
+SELECT equipoLocalFuera.nombre, 
+	(select sum(jep.puntos) from jugadores_x_equipo_x_partido jep
+	JOIN jugadores j on jep.jugadorid = j.jugadorid
+	JOIN equipo on j.equipoid = equipo.equipoid
+	JOIN partido p on jep.partidoid = p.partidoid
+	where equipoLocalFuera.equipoid = p.equipoidLocal  
+	group by p.partidoid) 
+as puntosLoc, 
+equipoVisitanteFuera.nombre, 
+	(select sum(jep.puntos) from jugadores_x_equipo_x_partido jep
+	JOIN jugadores j on jep.jugadorid = j.jugadorid
+	JOIN equipo on j.equipoid = equipo.equipoid
+	JOIN partido p on jep.partidoid = p.partidoid
+		where equipoVisitante.equipoid = equipoVisitanteFuera.equipoidVisitante
+	group by p.partidoid)
+as puntosVis
+FROM partido p
+JOIN equipo as equipoLocalFuera on p.equipoidLocal = equipoLocalFuera.equipoid
+JOIN equipo as equipoVisitanteFuera on p.equipoidVisitante = equipoVisitanteFuera.equipoid
+group by p.partidoid;
 
+
+select p.partidoid,equipoLocal.nombre, ifnull(sum(jep.puntos),0) from jugadores_x_equipo_x_partido jep
+	JOIN jugadores j on jep.jugadorid = j.jugadorid
+	JOIN equipo as equipoLocal on j.equipoid = equipoLocal.equipoid
+	JOIN partido p on jep.partidoid = p.partidoid
+	where equipoLocal.equipoid = p.equipoidLocal 
+    group by p.partidoid
+union
+select p.partidoid,equipoVisitante.nombre, ifnull(sum(jep.puntos),0) from jugadores_x_equipo_x_partido jep
+	JOIN jugadores j on jep.jugadorid = j.jugadorid
+	JOIN equipo as equipoVisitante on j.equipoid = equipoVisitante.equipoid
+	JOIN partido p on jep.partidoid = p.partidoid
+		where equipoVisitante.equipoid = p.equipoidVisitante
+group by p.partidoid
 
 
 

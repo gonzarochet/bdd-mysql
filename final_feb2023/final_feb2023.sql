@@ -91,4 +91,47 @@ GROUP BY cli.clienteid;
 
 /* 3. Listar la cantidad de viajes que se realizaron desde y hacia "Cordoba" en el año 2022. */
 
+SELECT count(*)
+FROM viajes v
+JOIN trayectos t on v.trayectoid = t.trayectoid
+JOIN ciudades as ciuOrigen on t.origenid = ciuOrigen.ciudadid
+JOIN ciudades as ciuDestino on t.destinoid = ciuDestino.ciudadid
+WHERE (((ciuOrigen.nombre = 'Cordoba Capital') OR (ciuDestino.nombre = 'Cordoba Capital') ) 
+AND year(v.fecha) = '2022'); 
 
+
+select * from viajes;
+select * from ciudades;
+
+/* 4. Con un Store Procedure que recibe el identificador de cliente, listar los destinos que todavia no realizó en ningun viaje. */
+DELIMITER $$ 
+CREATE PROCEDURE obtener_destinos_sin_hacer_x_cliente(
+	in idCliente int 
+)
+BEGIN
+SELECT ciu.nombre
+FROM ciudades ciu
+WHERE ciu.ciudadid NOT IN 
+	(
+		SELECT c.ciudadid
+		FROM clientes cli
+        JOIN viajes via on cli.clienteid = via.clienteid
+		JOIN trayectos t on via.trayectoid = t.trayectoid
+		JOIN ciudades c on t.origenid = c.ciudadid or t.destinoid = c.ciudadid
+		where via.clienteid = idCliente
+        group by c.ciudadid
+	) 
+GROUP BY ciu.ciudadid;
+END $$
+
+DELIMITER ;
+
+call obtener_destinos_sin_hacer_x_cliente(1);
+
+
+select * from clientes cli
+join viajes v on v.clienteid = cli.clienteid;
+
+select * from trayectos t
+JOIN ciudades as ciuOrigen on t.origenid = ciuOrigen.ciudadid
+JOIN ciudades as ciuDestino on t.destinoid = ciuDestino.ciudadid
