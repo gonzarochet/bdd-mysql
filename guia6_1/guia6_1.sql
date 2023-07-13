@@ -94,6 +94,9 @@ values(7,6,14,5,3,35.5,4);
 insert into jugadores_x_equipo_x_partido (jugadorid,partidoid,puntos,rebotes,asist,min,faltas)
 values(4,1,12,5,3,35.5,4);
 
+insert into jugadores_x_equipo_x_partido (jugadorid,partidoid,puntos,rebotes,asist,min,faltas)
+values(4,1,12,5,3,35.5,4);
+
 select * from jugadores_x_equipo_x_partido;
 
 select j.nombre, jep.puntos from jugadores_x_equipo_x_partido as jep
@@ -221,6 +224,48 @@ asistencias y faltas hicieron de promedio. Listar los mejores 5 y los peores 5 e
 a un coeficiente (promedio*1 + rebotes*0.5 + asistencias*0.5 + (faltas * -1)) .
 Identificar cada grupo diciendo si está entre los mejores 5 o los peores 5. */ 
 
+
+select * from jugadores;
+select * from partido;
+select * from jugadores_x_equipo_x_partido;
+select * from equipo;
+
+insert into jugadores_x_equipo_x_partido(jugadorid,partidoid,puntos,rebotes,asist,min,faltas) 
+values(9,1,2,1,4,8,1),(10,1,2,1,6,21,1),(11,2,21,2,4,29,4),(12,2,4,2,2,20,1),(14,2,6,7,1,29,2),(2,4,38,4,6,40,7);
+
+insert into jugadores_x_equipo_x_partido(jugadorid,partidoid,puntos,rebotes,asist,min,faltas) values
+(2,4,38,4,6,40,7);
+ SELECT
+   concat(jug.nombre, ' ', jug.apellido) as nombre,
+	(SELECT ifnull((avg(jep.puntos)*1 + avg(jep.rebotes)* 0.5 + avg(jep.asist) * 0.5 +(jep.faltas) * -1),0) as coeficiente
+	 FROM jugadores j
+	 JOIN jugadores_x_equipo_x_partido jep on j.jugadorid = jep.jugadorid
+	 WHERE j.jugadorid = jug.jugadorid)
+     as coeficienteJug
+FROM jugadores jug
+GROUP BY jug.jugadorid
+HAVING coeficienteJug >0
+order by coeficienteJug ASC limit 4;
+
+ SELECT
+  concat(jug.nombre, ' ', jug.apellido) as nombre,
+	(SELECT ifnull((avg(jep.puntos)*1 + avg(jep.rebotes)* 0.5 + avg(jep.asist) * 0.5 +(jep.faltas) * -1),0) as coeficiente
+	 FROM jugadores j
+	 JOIN jugadores_x_equipo_x_partido jep on j.jugadorid = jep.jugadorid
+	 WHERE j.jugadorid = jug.jugadorid)
+     as coeficienteJug
+FROM jugadores jug
+GROUP BY jug.jugadorid
+HAVING coeficienteJug >0
+order by coeficienteJug DESC limit 4;
+
+
+    
+
+
+
+/*
+
 SELECT j.jugadorid,(avg(jep.puntos)*1 + avg(jep.rebotes)* 0.5 + avg(jep.asist) * 0.5 +(jep.faltas) * -1) as coeficiente
 FROM jugadores j
 JOIN jugadores_x_equipo_x_partido jep 
@@ -248,47 +293,179 @@ JOIN jugadores_x_equipo_x_partido jep
 GROUP BY j.jugadorid
 ORDER BY coeficiente DESC;
 
+*/
 
-/*. Generar una consulta que nos devuelva el resultado de un partido. */
-SELECT equipoLocalFuera.nombre, 
-	(select sum(jep.puntos) from jugadores_x_equipo_x_partido jep
-	JOIN jugadores j on jep.jugadorid = j.jugadorid
-	JOIN equipo on j.equipoid = equipo.equipoid
-	JOIN partido p on jep.partidoid = p.partidoid
-	where equipoLocalFuera.equipoid = p.equipoidLocal  
-	group by p.partidoid) 
-as puntosLoc, 
-equipoVisitanteFuera.nombre, 
-	(select sum(jep.puntos) from jugadores_x_equipo_x_partido jep
-	JOIN jugadores j on jep.jugadorid = j.jugadorid
-	JOIN equipo on j.equipoid = equipo.equipoid
-	JOIN partido p on jep.partidoid = p.partidoid
-		where equipoVisitante.equipoid = equipoVisitanteFuera.equipoidVisitante
-	group by p.partidoid)
-as puntosVis
+
+/* 3. Generar una consulta que nos devuelva el resultado de un partido. 
+SELECT
+	(SELECT SUM(jep.puntos)
+	 FROM partido par
+     JOIN jugadores_x_equipo_x_partido jep on par.partidoid = jep.partidoid
+     JOIN jugadores j on jep.jugadorid = jep.jugadorid
+     JOIN equipo e on e.equipoid = par.equipoidLocal
+     WHERE e.equipoid = 1 AND jep.partidoid = 1) AS ptsLocal,
+     (SELECT SUM(jep.puntos)
+	 FROM partido par
+     JOIN jugadores_x_equipo_x_partido jep on par.partidoid = jep.partidoid
+     JOIN jugadores j on jep.jugadorid = jep.jugadorid
+     WHERE j.equipoid = 2 AND jep.partidoid = 1) AS ptsLocal
 FROM partido p
-JOIN equipo as equipoLocalFuera on p.equipoidLocal = equipoLocalFuera.equipoid
-JOIN equipo as equipoVisitanteFuera on p.equipoidVisitante = equipoVisitanteFuera.equipoid
-group by p.partidoid;
+JOIN equipo as equipoLocal on p.equipoidLocal = equipoLocal.equipoid
+JOIN equipo as equipoVisitante on p.equipoidVisitante = equipoVisitante.equipoid
+WHERE p.partidoid = 1
+group by p.partidoid; */
+
+/* Este es el que vale, muestra todos los resultados por partido y dice cual es cada equipo y sus respectivos puntos*/ 
+SELECT pa.partidoid, equipLocal.nombre,
+(select ifnull(sum(jeps.puntos),0)
+FROM partido p
+JOIN equipo as equipoLocal on p.equipoidLocal = equipoLocal.equipoid
+JOIN equipo as equipoVisitante on p.equipoidVisitante = equipoVisitante.equipoid
+JOIN jugadores_x_equipo_x_partido jeps on jeps.partidoid = p.partidoid
+JOIN jugadores j on jeps.jugadorid = j.jugadorid
+WHERE jeps.partidoid = jep.partidoid and j.equipoid = equipoLocal.equipoid) AS ptsLocal,
+equipVisitante.nombre,
+(
+select ifnull(sum(jeps.puntos),0)
+FROM partido p
+JOIN equipo as equipoLocal on p.equipoidLocal = equipoLocal.equipoid
+JOIN equipo as equipoVisitante on p.equipoidVisitante = equipoVisitante.equipoid
+JOIN jugadores_x_equipo_x_partido jeps on jeps.partidoid = p.partidoid
+JOIN jugadores j on jeps.jugadorid = j.jugadorid
+WHERE jeps.partidoid = jep.partidoid and j.equipoid = equipoVisitante.equipoid
+) as ptsVisit
+from jugadores_x_equipo_x_partido jep
+join partido pa on jep.partidoid = pa.partidoid -- si quiero un partido en particular, solo cambio lo que le paso aqui. 
+join equipo as equipLocal on equipLocal.equipoid = pa.equipoidLocal
+join equipo as equipVisitante on equipVisitante.equipoid = pa.equipoidVisitante
+group by jep.partidoid;
+
+/* 4. Generar una consulta que nos permita visualizar la tabla de posiciones de un torneo*/ 
+SELECT
+e.nombre,
+	(CASE
+			WHEN (e.equipoid = par.equipoidLocal) and 
+				(SELECT ifnull(sum(jeps.puntos),0)
+				FROM partido p
+				JOIN equipo as el on p.equipoidLocal = el.equipoid
+				JOIN equipo as ev on p.equipoidVisitante = ev.equipoid
+				JOIN jugadores_x_equipo_x_partido jeps on jeps.partidoid = p.partidoid
+				JOIN jugadores j on jeps.jugadorid = j.jugadorid
+				WHERE par.partidoid = jeps.partidoid and j.equipoid = el.equipoid -- jep.equipoid
+                ) >  (SELECT ifnull(sum(jeps.puntos),0)
+					FROM partido p
+					JOIN equipo as el on p.equipoidLocal = el.equipoid
+					JOIN equipo as ev on p.equipoidVisitante = ev.equipoid
+					JOIN jugadores_x_equipo_x_partido jeps on jeps.partidoid = p.partidoid
+					JOIN jugadores j on jeps.jugadorid = j.jugadorid
+					WHERE par.partidoid = jeps.partidoid and j.equipoid = ev.equipoid -- jep.equipoid
+			) 
+            THEN 2
+           WHEN (e.equipoid = par.equipoidVisitante) and (
+				(SELECT ifnull(sum(jeps.puntos),0)
+				FROM partido p
+				JOIN equipo as el on p.equipoidLocal = el.equipoid
+				JOIN equipo as ev on p.equipoidVisitante = ev.equipoid
+				JOIN jugadores_x_equipo_x_partido jeps on jeps.partidoid = p.partidoid
+				JOIN jugadores j on jeps.jugadorid = j.jugadorid
+				WHERE par.partidoid = jeps.partidoid and j.equipoid = el.equipoid -- jep.equipoid
+                ) <  (SELECT ifnull(sum(jeps.puntos),0)
+					FROM partido p
+					JOIN equipo as el on p.equipoidLocal = el.equipoid
+					JOIN equipo as ev on p.equipoidVisitante = ev.equipoid
+					JOIN jugadores_x_equipo_x_partido jeps on jeps.partidoid = p.partidoid
+					JOIN jugadores j on jeps.jugadorid = j.jugadorid
+					WHERE par.partidoid = jeps.partidoid and j.equipoid = ev.equipoid )-- jep.equipoid
+			)
+            THEN 2 
+            ELSE 0 END 
+		) as Puntos
+FROM equipo e
+JOIN partido par on e.equipoid = par.equipoidLocal or par.equipoidVisitante = e.equipoid
+GROUP BY e.equipoid;
 
 
-select p.partidoid,equipoLocal.nombre, ifnull(sum(jep.puntos),0) from jugadores_x_equipo_x_partido jep
-	JOIN jugadores j on jep.jugadorid = j.jugadorid
-	JOIN equipo as equipoLocal on j.equipoid = equipoLocal.equipoid
-	JOIN partido p on jep.partidoid = p.partidoid
-	where equipoLocal.equipoid = p.equipoidLocal 
-    group by p.partidoid
-union
-select p.partidoid,equipoVisitante.nombre, ifnull(sum(jep.puntos),0) from jugadores_x_equipo_x_partido jep
-	JOIN jugadores j on jep.jugadorid = j.jugadorid
-	JOIN equipo as equipoVisitante on j.equipoid = equipoVisitante.equipoid
-	JOIN partido p on jep.partidoid = p.partidoid
-		where equipoVisitante.equipoid = p.equipoidVisitante
-group by p.partidoid
+/* 5. Generar una consulta que nos permita conocer los jugadores con mejor promedio de
+puntos es decir: Si hay dos jugadores que hicieron 30 puntos por partido listarlos a
+ambos. */
+SELECT 
+j.nombre, j.apellido, avg(jep.puntos) as puntosJug
+FROM jugadores j
+JOIN jugadores_x_equipo_x_partido jep 
+	on jep.jugadorid = j.jugadorid
+GROUP BY j.jugadorid
+having puntosJug = (SELECT MAX(jugMaxPuntos) 
+					FROM (SELECT AVG(jep.puntos) as jugMaxPuntos from jugadores j 
+                    join jugadores_x_equipo_x_partido jep on jep.jugadorid = j.jugadorid
+                    group by j.jugadorid)as jugadoresPuntos); 
+                    
+/* 6. Generar una consulta que nos permita conocer los jugadores que hicieron más
+puntos en un partido y en qué partido lo hicieron (Poner Equipo Local y Equipo
+Visitante). */ 
+
+SELECT
+concat(j.nombre, ' ', j.apellido),
+jep.puntos as pts,
+el.nombre as equipolocal, 
+ev.nombre as equipoVis
+FROM jugadores j
+JOIN jugadores_x_equipo_x_partido jep on j.jugadorid = jep.jugadorid
+JOIN partido p on jep.partidoid = p.partidoid
+JOIN equipo as el on el.equipoid = p.equipoidLocal
+JOIN equipo as ev on ev.equipoid = p.equipoidVisitante
+having pts = (SELECT MAX(jep.puntos) from jugadores j 
+				join jugadores_x_equipo_x_partido jep on jep.jugadorid = j.jugadorid);
+                
+/* 7. Listar los equipos y en el mismo registro listar cual es el jugador con el mayor
+promedio de puntos.*/ 
+SELECT
+e.nombre as 'Nombre Equipo ',
+(
+SELECT concat(j.nombre, ' ', j.apellido) 
+FROM jugadores j
+JOIN jugadores_x_equipo_x_partido jep on j.jugadorid = jep.jugadorid
+group by j.jugadorid
+having avg(jep.puntos) = 
+			(
+            SELECT max(ptsJug) FROM (select avg(jep.puntos) as ptsJug
+									FROM jugadores j 
+                                    JOIN jugadores_x_equipo_x_partido jep 
+                                    on j.jugadorid = jep.jugadorid
+                                    group by j.jugadorid) 
+			as tabla
+		) 
+)as jugMaxPuntos
+FROM equipo e; 
 
 
+select e.nombre from equipo e
+union all
+SELECT concat(j.nombre, ' ', j.apellido) 
+FROM jugadores j
+JOIN jugadores_x_equipo_x_partido jep on j.jugadorid = jep.jugadorid
+group by j.jugadorid
+having avg(jep.puntos) = 
+			(
+            SELECT max(ptsJug) FROM (select avg(jep.puntos) as ptsJug
+									FROM jugadores j 
+                                    JOIN jugadores_x_equipo_x_partido jep 
+                                    on j.jugadorid = jep.jugadorid
+                                    group by j.jugadorid) 
+			as tabla
+		);
+/* 8. Listar los equipos en el mismo registro listar cual es el jugador que hizo más puntos
+en un partido, cuantos puntos y en qué partido lo hizo. */ 
+SELECT e.nombre from equipo e
+UNION
+SELECT concat(j.nombre, ' ', j.apellido)FROM jugadores j
+join jugadores_x_equipo_x_partido jep on jep.jugadorid = j.jugadorid
+having max(jep.puntos)
+UNION
+select p.partidoid from partido p
+where p.partidoid = (SELECT jep.partidoid FROM jugadores j
+join jugadores_x_equipo_x_partido jep on jep.jugadorid = j.jugadorid
+order by jep.puntos desc limit 1) ;
 
-
-
+select * from jugadores_x_equipo_x_partido;
 
  
